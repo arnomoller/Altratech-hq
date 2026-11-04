@@ -452,6 +452,10 @@ function chart14(v){
 function evRow(e){
   return `<div class="ev ${esc(e.level)}"><span class="mono sub">${esc(hm(e.ts))}</span>${agent(e.agent)}<span class="msg">${esc(e.message)}</span></div>`;
 }
+function qchip(l){
+  const q = l.quality_score|0;
+  return q ? `<span class="chip ${q>=8?"good":q>=7?"":"warn"}" title="How likely they are to be a good, paying client">★ ${q}/10</span>` : "";
+}
 function nameOf(v,id){ const l = v.leads.get(id); return l ? l.business_name : "Unknown business"; }
 
 function viewReplies(v){
@@ -492,9 +496,10 @@ function viewApprove(v){
     const x = v.drafts.get(l.id); const key = "lead-"+l.id;
     const comp = x.compliance_ok ? ["Passed checks","good"] : ["Blocked: "+(x.compliance_issues||"not checked yet"),"bad"];
     return `<div class="card stack">
-      <div class="item"><span><span class="mono sub">#${l.id}</span> <span class="name">${esc(l.business_name)}</span></span><span class="row">${chip(STATUS[l.status]||["",""])}${chip(comp)}</span></div>
+      <div class="item"><span><span class="mono sub">#${l.id}</span> <span class="name">${esc(l.business_name)}</span></span><span class="row">${qchip(l)}${chip(STATUS[l.status]||["",""])}${chip(comp)}</span></div>
       <div class="sub">${esc(l.category)}, ${esc(l.town)} · to <b>${esc(l.email)}</b> · <a href="${esc(l.source_url)}" target="_blank" rel="noopener">where we found them</a></div>
       ${l.notes ? `<div class="sub"><b>Research:</b> ${esc(l.notes)}</div>` : ""}
+      ${l.quality_reasons ? `<div class="sub"><b>Why they're a good fit:</b> ${esc(l.quality_reasons)}</div>` : ""}
       ${emailBox(x)}
       <div class="row">${S.pending[key] ? `<span class="pending">${esc(S.pending[key].label)}</span>` : `
         ${l.status==="drafted" && x.compliance_ok ? `<button class="btn primary" data-cmd="approve ${l.id}" data-key="${key}" data-label="Approving #${l.id}">Approve and send</button>` : ""}
@@ -526,9 +531,9 @@ function viewLeads(v){
   return `<h2>Every business the crew found</h2>
   <div class="filters"><input id="q" type="search" placeholder="Search name, town, type…" value="${esc(S.q)}" aria-label="Search leads">
   <select id="st" aria-label="Filter by status"><option value="all">All (${v.d.leads.length})</option>${Object.keys(STATUS).filter(k=>counts[k]).map(k=>`<option value="${k}" ${S.status===k?"selected":""}>${STATUS[k][0]} (${counts[k]})</option>`).join("")}</select></div>
-  <div class="card"><div class="list">${rows.slice(0,300).map(l => `<details><summary><div class="item"><span><span class="chev">›</span> <span class="name">${esc(l.business_name)}</span> <span class="sub">${esc(l.category)}, ${esc(l.town)}</span></span>${chip(STATUS[l.status]||[l.status,""])}</div></summary>
+  <div class="card"><div class="list">${rows.slice(0,300).map(l => `<details><summary><div class="item"><span><span class="chev">›</span> <span class="name">${esc(l.business_name)}</span> <span class="sub">${esc(l.category)}, ${esc(l.town)}</span></span><span class="row">${qchip(l)}${chip(STATUS[l.status]||[l.status,""])}</span></div></summary>
     <div class="stack" style="margin-top:8px;padding-left:16px"><div class="sub">${esc(l.email||"no email")}${l.phone?" · "+esc(l.phone):""} · found ${esc(when(l.created_at))} · <a href="${esc(l.source_url)}" target="_blank" rel="noopener">source</a></div>
-    ${l.notes ? `<div>${esc(l.notes)}</div>` : ""}</div></details>`).join("") || `<div class="empty">No matches.</div>`}</div>
+    ${l.notes ? `<div>${esc(l.notes)}</div>` : ""}${l.quality_reasons ? `<div class="sub"><b>Fit:</b> ${esc(l.quality_reasons)}</div>` : ""}</div></details>`).join("") || `<div class="empty">No matches.</div>`}</div>
   ${rows.length>300 ? `<div class="sub">Showing the first 300 of ${rows.length}. Search to narrow it down.</div>` : ""}</div>`;
 }
 
@@ -625,7 +630,7 @@ function demoData(){
     [6,"Lekker Laundry","cleaning services","Polokwane","lekkerlaundry@example.com","","Same-day wash and fold; Gumtree ad from 2024 is their only listing.","drafted",95],
     [7,"Bosveld Pool Care","pool services","Mbombela","bosveldpools@example.com","","Weekly pool services; 41 Google reviews mention reliability.","drafted",80],
     [8,"Stitch & Style Tailors","tailors","Durban","stitchstyle@example.com","","Matric dance suits and alterations; Facebook only.","drafted",60]
-  ].map(r => ({id:r[0],business_name:r[1],category:r[2],town:r[3],email:r[4],phone:r[5],notes:r[6],status:r[7],has_website:0,source_url:"https://www.facebook.com/",created_at:iso(r[8]),updated_at:iso(Math.max(5,r[8]-30))}));
+  ].map(r => ({id:r[0],business_name:r[1],category:r[2],town:r[3],email:r[4],phone:r[5],notes:r[6],status:r[7],quality_score:[9,7,8,8,9,7,8,7][r[0]-1],quality_reasons:"Established, strong reviews, busy suburb",has_website:0,source_url:"https://www.facebook.com/",created_at:iso(r[8]),updated_at:iso(Math.max(5,r[8]-30))}));
   const body = n => `Howzit ${n} crew,\n\nYour reviews say it all, but when someone asks Uncle Google at 2am, he can't find you, and your competitor gets the call.\n\nWe're Altratech, a South African studio. We build proper websites and get them live in ONE day. No jargon, no six-week saga.\n\nKeen? Just reply to this email and we'll sort you out lekker quickly.\n\nCheers,\nArno`;
   const foot = n => `--\nArno | Altratech | https://altratech.co.za\nWhy you're getting this: we found ${n} listed on facebook.com. This is a once-off message.\nNot keen? Reply STOP and we'll never contact you again.`;
   const drafts = leads.map(l => ({lead_id:l.id, subject: ["Uncle Google can't find you (yet)","Your melktert deserves a website","Fades this clean need a booking page","Honest quotes deserve to be found","Wedding season is coming","Lekker Laundry, meet the internet","Your pool clients are Googling you","Matric dance season is around the corner"][l.id-1], email_body: body(l.business_name), footer: foot(l.business_name), angle:"Uncle Google", compliance_ok: l.id===8 ? 0 : 1, compliance_issues: l.id===8 ? "contact details weren't published by the business itself" : "", created_at: iso(l.id>5 ? 50 : 2860)}));
