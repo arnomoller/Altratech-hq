@@ -406,7 +406,8 @@ function viewToday(v){
   return `
   ${missing.length ? `<div class="warnbox"><b>Still to set up</b> in GitHub → Settings → Secrets and variables → Actions: ${missing.map(m=>`<code>${esc(m)}</code>`).join(", ")}</div>` : ""}
   <div><h2>${esc(fmt(new Date(),{weekday:"long",day:"numeric",month:"long"}))}</h2>
-  <div class="sub">All time: ${s.leads_total||0} businesses found · ${s.emails_sent||0} emailed · ${s.replies||0} replies (${s.hot_replies||0} keen) · ${s.suppressed||0} opted out</div></div>
+  <div class="sub">All time: ${s.leads_total||0} businesses found · ${s.emails_sent||0} emailed · ${s.replies||0} replies (${s.hot_replies||0} keen) · ${s.suppressed||0} opted out</div>
+  ${s.daily_budget_usd ? `<div class="sub">Claude spend: <b>${usd(s.spend_today_usd)}</b> of ${usd(s.daily_budget_usd)} today · ${usd(s.spend_month_usd)} this month</div>` : ""}</div>
   <div class="kpis">${kpis.map(k => `<div class="kpi${k[2]?" hl":""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("")}</div>
   ${(v.hot.length || v.waiting.length) ? `<div class="needs">
     ${v.hot.length ? `<div class="card"><h3>${v.hot.length} keen ${v.hot.length===1?"reply":"replies"}</h3><span class="sub">Latest: ${esc(nameOf(v, v.hot[0].lead_id))}, ${esc(when(v.hot[0].received_at))}</span><div><button class="btn primary" data-tab="replies">Read replies</button></div></div>` : ""}
@@ -456,6 +457,7 @@ function qchip(l){
   const q = l.quality_score|0;
   return q ? `<span class="chip ${q>=8?"good":q>=7?"":"warn"}" title="How likely they are to be a good, paying client">★ ${q}/10</span>` : "";
 }
+const usd = n => "US$" + (Number(n)||0).toFixed(2);
 function nameOf(v,id){ const l = v.leads.get(id); return l ? l.business_name : "Unknown business"; }
 
 function viewReplies(v){
@@ -650,7 +652,7 @@ function demoData(){
   ];
   return {version:1, generated_at:iso(0), running:{action:"cycle", run_url:"", started_at:iso(42)},
     settings:{missing:[], auto_approve:false, daily_cap:30, live:true},
-    stats:{leads_total:8, emails_sent:4, replies:1, hot_replies:1, suppressed:0},
+    stats:{leads_total:8, emails_sent:4, replies:1, hot_replies:1, suppressed:0, spend_today_usd:0.62, daily_budget_usd:1, spend_month_usd:4.85},
     leads, drafts, sends, replies, events,
     briefing:{ts:iso(1290), content:"Lekker day yesterday: 4 emails out, and Sipho's Plumbing is already keen. Three drafts are waiting for your thumbs-up. One is blocked because the email wasn't published by the business, so skip that one. Next: more trades in smaller towns, they bite fastest."},
     posts:{ts:iso(1290), items:[{platform:"Facebook", hook:"Uncle Google is looking for you", caption:"Somewhere in Benoni a geyser just burst. The owner grabs their phone and asks Uncle Google for a plumber.\n\nIf you're not online, you're not in the running. We build your website and get it live in ONE day. Local is lekker. WhatsApp us or DM us.", visual_idea:"Phone screen showing a 'plumber near me' search at 02:00", hashtags:["#LocalIsLekker","#SmallBusinessSA","#Altratech"]}]},
